@@ -10,5 +10,7 @@ connlleval.py: https://github.com/sighsmile/conlleval/blob/master/conlleval.py
 5. Do python `train_pred_eval.py`
 6. You can monitoring or confirm　loss curve by tensorboard.
 
+trained models: https://drive.google.com/drive/folders/11uyVskbp9oLQVsj7A5lfIsKhhPJOoFKr?usp=sharing
+
 current score  
-LSTM-crf: 76.58, [model](https://drive.google.com/drive/folders/11uyVskbp9oLQVsj7A5lfIsKhhPJOoFKr?usp=sharing)
+LSTM-crf: 76.58, 
