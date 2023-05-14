@@ -1,4 +1,4 @@
-# chunking
+# Chunking Shared Task in Conll2000
 
 Dataset: https://www.clips.uantwerpen.be/conll2000/chunking/  
 connlleval.py: https://github.com/sighsmile/conlleval/blob/master/conlleval.py
