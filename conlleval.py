@@ -237,4 +237,5 @@ if __name__ == "__main__":
     path = "./output.txt"
     with open(path) as f:
         file_iter = f.readlines()
-    evaluate_conll_file(file_iter)
+    _, _, f1 = evaluate_conll_file(file_iter)
+    print("score: ", round(f1, 2))

@@ -32,17 +32,18 @@ def main():
         lr=lr,
         crf=True,
         checkpoint_path=path,
-    )
+    ).to("cuda")
 
     output = []
     for input, out_text, out_pos, out_chunk in zip(test_data["text"], test_data["raw_text"], test_data["raw_pos"], test_data["raw_chunk"]):
-        pred_chunk = net.predict(torch.tensor(input)).reshape(-1).tolist()
+        input = torch.tensor([input]).to("cuda")
+        pred_chunk = net.predict(input).to("cpu").reshape(-1).tolist()
         pred_chunk = [preprocessing.val_to_key(pred, chunk_dict) for pred in pred_chunk]
         pred_chunk = [c for c in pred_chunk if c != "PAD"]
         out = [" ".join([t, p, c, pred]) for t, p, c, pred in zip(out_text, out_pos, out_chunk, pred_chunk)]
         out = "\n".join(out)
         output.append(out)
-        output.append("\n")
+        output.append("\n\n")
 
     output = "".join(output)
 

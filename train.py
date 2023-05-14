@@ -81,7 +81,7 @@ def main():
     callbacks.append(
         EarlyStopping(
             "loss",
-            patience=300,
+            patience=30,
             verbose=True,
             mode="min",
             check_on_train_epoch_end=False,
