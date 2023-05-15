@@ -2,9 +2,6 @@ import torch
 from torch import nn
 from TorchCRF import CRF
 
-START_TAG = "SOS"
-STOP_TAG = "EOS"
-
 
 class lstm(nn.Module):
     def __init__(self, batch_size, vocab_size, chunk_dict, embedding_dim, hidden_dim, num_layers, device="cuda") -> None:

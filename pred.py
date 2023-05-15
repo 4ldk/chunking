@@ -17,7 +17,7 @@ path = "./check_point/last.ckpt"
 
 
 def main():
-    train_data, test_data, encode_dicts = preprocessing.preprocessing()
+    _, test_data, encode_dicts = preprocessing.preprocessing()
 
     word_dict = encode_dicts["word_dict"]
     chunk_dict = encode_dicts["chunk_dict"]
@@ -35,10 +35,12 @@ def main():
     ).to("cuda")
 
     output = []
-    for input, out_text, out_pos, out_chunk in zip(test_data["text"], test_data["raw_text"], test_data["raw_pos"], test_data["raw_chunk"]):
+    for input, label, out_text, out_pos, out_chunk in zip(
+        test_data["text"], test_data["chunk"], test_data["raw_text"], test_data["raw_pos"], test_data["raw_chunk"]
+    ):
         input = torch.tensor([input]).to("cuda")
         pred_chunk = net.predict(input).to("cpu").reshape(-1).tolist()
-        pred_chunk = [preprocessing.val_to_key(pred, chunk_dict) for pred in pred_chunk]
+        pred_chunk = [preprocessing.val_to_key(p, chunk_dict) for (p, lbl) in zip(pred_chunk, label) if lbl != len(chunk_dict)]
         pred_chunk = [c for c in pred_chunk if c != "PAD"]
         out = [" ".join([t, p, c, pred]) for t, p, c, pred in zip(out_text, out_pos, out_chunk, pred_chunk)]
         out = "\n".join(out)

@@ -8,9 +8,6 @@ import lstm
 import preprocessing
 from datamodule import Dataset, Net
 
-START_TAG = lstm.START_TAG
-STOP_TAG = lstm.STOP_TAG
-
 EMBEDDING_DIM = 256
 HIDDEN_DIM = 256
 num_layers = 3
@@ -24,8 +21,6 @@ def main():
 
     word_dict = encode_dicts["word_dict"]
     chunk_dict = encode_dicts["chunk_dict"]
-    chunk_dict[START_TAG] = len(chunk_dict.keys())
-    chunk_dict[STOP_TAG] = len(chunk_dict.keys())
 
     model = lstm.lstm(batch_size, len(word_dict), chunk_dict, EMBEDDING_DIM, HIDDEN_DIM, num_layers=num_layers)
     model = lstm.dnn_crf(model, batch_size, len(chunk_dict))

@@ -2,6 +2,7 @@ import re
 from itertools import chain
 
 from tqdm import tqdm
+from transformers import AutoTokenizer
 
 
 def key_to_val(key, dic):
@@ -93,10 +94,11 @@ def path_to_data(path, encode_dicts={}):
         pos_dict["PAD"] = len(pos_dict)
     else:
         chunk_dict = encode_dicts["chunk_dict"]
+        pos_dict["x"] = len(pos_dict)
 
     e_text = encode(text, word_dict)
     e_pos = encode(pos, pos_dict)
-    e_chunk = encode(chunk, chunk_dict)
+    e_chunk = encode(chunk, chunk_dict, pad_key="x")
 
     data = {
         "text": e_text,
@@ -127,8 +129,60 @@ def preprocessing():
     return train_data, test_data, encode_dicts
 
 
+def subword_preprocessing(data, encode_dicts):
+    e_pos, e_chunk, raw_text, raw_pos, raw_chunk = (
+        data["pos"],
+        data["chunk"],
+        data["raw_text"],
+        data["raw_pos"],
+        data["raw_chunk"],
+    )
+    chunk_dict = encode_dicts["chunk_dict"]
+
+    tokenizer = AutoTokenizer.from_pretrained("bert-base-uncased")  # "dslim/bert-base-NER"
+
+    tokens = tokenizer(raw_text, truncation=True, is_split_into_words=True, return_tensors="pt", max_length=80, padding="max_length")
+
+    labels = []
+    for i, label in enumerate(e_chunk):
+        word_ids = tokens.word_ids(batch_index=i)  # Map tokens to their respective word.
+        previous_word_idx = None
+        label_ids = []
+        for word_idx in word_ids:  # Set the special tokens to -100.
+            if word_idx is None:
+                label_ids.append(chunk_dict["x"])
+            elif word_idx != previous_word_idx:  # Only label the first token of a given word.
+                label_ids.append(label[word_idx])
+            else:
+                label_ids.append(chunk_dict["x"])
+            previous_word_idx = word_idx
+        labels.append(label_ids)
+
+    print(tokens["input_ids"][0])
+    print(labels[0])
+
+    print(tokens["input_ids"][1])
+    print(labels[1])
+
+    print(tokens["input_ids"][2])
+    print(labels[2])
+
+    data = {
+        "text": tokens["input_ids"],
+        "attention_mask": tokens["attention_mask"],
+        "pos": e_pos,
+        "chunk": labels,
+        "raw_text": raw_text,
+        "raw_pos": raw_pos,
+        "raw_chunk": raw_chunk,
+    }
+    return data, encode_dicts, tokenizer
+
+
 if __name__ == "__main__":
     train_data, test_data, encode_dicts = preprocessing()
+    train_data, encode_dicts, tokenizer = subword_preprocessing(train_data, encode_dicts)
+    test_data, _, _ = subword_preprocessing(test_data, encode_dicts)
 
     print(encode_dicts["chunk_dict"])
     for t in train_data["chunk"][:10]:
