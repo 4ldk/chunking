@@ -5,10 +5,10 @@ import torch
 from torch.utils.data import Dataset
 from torch import nn, optim
 
-from utils import recall_score, f1_score
+from utils import recall_score, f1_score, CosineScheduler
 
 
-class Dataset(Dataset):
+class lstm_dataset(Dataset):
     def __init__(self, X, P, y) -> None:
         super().__init__()
         self.X = torch.tensor(X)
@@ -44,7 +44,7 @@ class bert_dataset(Dataset):
 
 
 class Net(pl.LightningModule):
-    def __init__(self, model, lr, crf=False):
+    def __init__(self, model, lr, crf=False, use_scheduler=True):
         super().__init__()
 
         print("Making Model...")
@@ -58,6 +58,19 @@ class Net(pl.LightningModule):
             amsgrad=True,
         )
         self.crf = crf
+
+        self.use_scheduler = use_scheduler
+        self.scheduler = {
+            "scheduler": CosineScheduler(
+                self.optimizer,
+                t_initial=490,
+                lr_min=1e-9,
+                warmup_t=10,
+                warmup_lr_init=1e-6,
+                warmup_prefix=True,
+            ),
+            "interval": "epoch",
+        }
 
     def forward(self, x, sub):
         output = self.model(x, sub)
@@ -139,4 +152,9 @@ class Net(pl.LightningModule):
         return super().test_epoch_end(outputs)
 
     def configure_optimizers(self):
-        return [self.optimizer]
+        if self.use_scheduler:
+            lr_scheduler = self.scheduler
+            return [self.optimizer], [lr_scheduler]
+
+        else:
+            return [self.optimizer]

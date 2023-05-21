@@ -6,7 +6,7 @@ from torch.utils.data import DataLoader
 
 import lstm
 import preprocessing
-from datamodule import Dataset, Net
+from datamodule import lstm_dataset, Net
 
 EMBEDDING_DIM = 256
 HIDDEN_DIM = 256
@@ -27,7 +27,7 @@ def main():
     model = lstm.lstm(batch_size, len(word_dict), len(pos_dict), chunk_dict, EMBEDDING_DIM, HIDDEN_DIM, num_layers=num_layers, device=device)
     model = lstm.dnn_crf(model, batch_size, len(chunk_dict), device=device)
 
-    train_set = Dataset(train_data["text"], train_data["pos"], train_data["chunk"])
+    train_set = lstm_dataset(train_data["text"], train_data["pos"], train_data["chunk"])
     train_loader = DataLoader(
         train_set,
         batch_size=batch_size,
@@ -37,7 +37,7 @@ def main():
         drop_last=True,
     )
 
-    test_set = Dataset(test_data["text"], test_data["pos"], test_data["chunk"])
+    test_set = lstm_dataset(test_data["text"], test_data["pos"], test_data["chunk"])
     test_loader = DataLoader(
         test_set,
         batch_size=batch_size,

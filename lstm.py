@@ -64,13 +64,21 @@ class dnn_crf(nn.Module):
         self.mask = torch.ones(batch_size, 80).to(torch.bool).to(device)
 
     def forward(self, x, p, y):
-        x = self.model(x, p)
+        preds = self.model(x, p)
+        if type(preds) == torch.Tensor:
+            x = preds
+        else:
+            x = preds["logits"]
         out = self.crf.forward(x, y, self.mask)
 
         return out
 
     def decode(self, x, p):
-        x = self.model(x, p)
+        preds = self.model(x, p)
+        if type(preds) == torch.Tensor:
+            x = preds
+        else:
+            x = preds["logits"]
         out = self.crf.viterbi_decode(x, self.mask)
         out = torch.tensor(out)
 

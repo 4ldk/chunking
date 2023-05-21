@@ -11,7 +11,7 @@ num_layers = 3
 num_epoch = 500
 batch_size = 1
 lr = 0.0001
-path = "./check_point/last.ckpt"
+path = "./check_point/epoch=59-recall=0.85.ckpt"
 
 
 def main():
@@ -21,7 +21,7 @@ def main():
     pos_dict = encode_dicts["pos_dict"]
     chunk_dict = encode_dicts["chunk_dict"]
 
-    device = "cpu"
+    device = "cuda"
     model = lstm.lstm(batch_size, len(word_dict), len(pos_dict), chunk_dict, EMBEDDING_DIM, HIDDEN_DIM, num_layers=num_layers, device=device)
     model = lstm.dnn_crf(model, batch_size, len(chunk_dict), device=device)
 
@@ -30,15 +30,24 @@ def main():
         lr=lr,
         crf=True,
         checkpoint_path=path,
+    ).to(device)
+
+    inputs, pos_inputs, out_texts, out_poses, out_chunks = (
+        test_data["text"],
+        test_data["pos"],
+        test_data["raw_text"],
+        test_data["raw_pos"],
+        test_data["raw_chunk"],
     )
+    inputs = torch.tensor(inputs).to(device)
+    pos_inputs = torch.tensor(pos_inputs).to(device)
 
     output = []
-    for input, pos, out_text, out_pos, out_chunk in zip(
-        test_data["text"], test_data["pos"], test_data["raw_text"], test_data["raw_pos"], test_data["raw_chunk"]
-    ):
-        input = torch.tensor([input])
-        pos = torch.tensor([pos])
-        pred_chunk = net.predict(input, pos).reshape(-1).tolist()
+    for input, pos, out_text, out_pos, out_chunk in zip(inputs, pos_inputs, out_texts, out_poses, out_chunks):
+
+        input = input.unsqueeze(0)
+        pos = pos.unsqueeze(0)
+        pred_chunk = net.predict(input, pos).reshape(-1).to("cpu").tolist()
         pred_chunk = pred_chunk[1:-1]
         pred_chunk = [preprocessing.val_to_key(p, chunk_dict) for p in pred_chunk]
         pred_chunk = [c for c in pred_chunk if c != "PAD"]

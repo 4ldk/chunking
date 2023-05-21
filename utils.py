@@ -1,4 +1,6 @@
 import numpy as np
+from timm.scheduler import CosineLRScheduler
+from torch import optim
 
 
 def recall_score(target, pred, average=None):
@@ -40,3 +42,15 @@ def f1_score(target, pred):
     prec = precision_score(target, pred, average="micro")
 
     return 2 / (1 / recall + 1 / prec)
+
+
+class CosineScheduler(optim.lr_scheduler.LambdaLR):
+    def __init__(self, optimizer, **kwargs):
+        self.init_lr = optimizer.param_groups[0]["lr"]
+        self.timmsteplr = CosineLRScheduler(optimizer, **kwargs)
+        super().__init__(optimizer, self)
+
+    def __call__(self, epoch):
+        desired_lr = self.timmsteplr.get_epoch_values(epoch)[0]
+        mult = desired_lr / self.init_lr
+        return mult

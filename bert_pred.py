@@ -12,7 +12,7 @@ path = "./bert_model"
 
 
 def main():
-    _, test_data, encode_dicts = preprocessing.preprocessing()
+    _, test_data, encode_dicts = preprocessing.preprocessing(chunk_pad_key="x")
     test_data, _, _ = preprocessing.subword_preprocessing(test_data, encode_dicts)
 
     chunk_dict = encode_dicts["chunk_dict"]

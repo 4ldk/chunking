@@ -9,7 +9,7 @@ from datamodule import Net, bert_dataset
 import lstm
 
 
-batch_size = 50
+batch_size = 25
 lr = 1e-4
 num_epoch = 50
 
@@ -22,7 +22,7 @@ def compute_metrics(pred):
 
 
 def main():
-    train_data, test_data, encode_dicts = preprocessing.preprocessing()
+    train_data, test_data, encode_dicts = preprocessing.preprocessing(chunk_pad_key="x")
     train_data, encode_dicts, _ = preprocessing.subword_preprocessing(train_data, encode_dicts)
     test_data, _, _ = preprocessing.subword_preprocessing(test_data, encode_dicts)
 
@@ -52,7 +52,7 @@ def main():
         drop_last=True,
     )
 
-    model = AutoModelForTokenClassification("bert-base-cased", num_labels=len(chunk_dict))  # "dslim/bert-base-NER"
+    model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=len(chunk_dict))  # "dslim/bert-base-NER"
     model = lstm.dnn_crf(model, batch_size, len(chunk_dict))
 
     net = Net(model, lr, crf=True)

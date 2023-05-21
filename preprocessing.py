@@ -22,14 +22,16 @@ def val_to_key(val, dic, pad_key="PAD"):
 
 def encode(data, encode_dict, pad_key="PAD", bos_key="BOS", eos_key="EOS"):
     out = []
+    max_len = 80 if pad_key == "x" else 80 - 1
     for d in data:
-        val_list = [encode_dict[bos_key]]
+        val_list = [] if pad_key == "x" else [encode_dict[bos_key]]
         val_list += [key_to_val(key, encode_dict) for key in d]
 
-        while len(val_list) < 80 - 1:
+        while len(val_list) < max_len:
             val_list.append(key_to_val(pad_key, encode_dict))
 
-        val_list += [encode_dict[eos_key]]
+        if pad_key != "x":
+            val_list += [encode_dict[eos_key]]
 
         out.append(val_list)
     return out
@@ -50,6 +52,10 @@ def make_dict(data, min_num=0, pad_key="PAD", bos_key="BOS", eos_key="EOS"):
 
     d["UNK"] = len(d)
     d[pad_key] = len(d)
+
+    if pad_key == "x":
+        return d
+
     d[bos_key] = len(d)
     d[eos_key] = len(d)
 
@@ -73,7 +79,7 @@ def simplify_text(text):
     return simple_text
 
 
-def path_to_data(path, encode_dicts={}):
+def path_to_data(path, encode_dicts={}, chunk_pad_key="PAD"):
 
     with open(path, "r") as f:
         data = f.read()
@@ -108,13 +114,13 @@ def path_to_data(path, encode_dicts={}):
         pos_dict = encode_dicts["pos_dict"]
 
     if "chunk_dict" not in encode_dicts.keys():
-        chunk_dict = make_dict(chunk)
+        chunk_dict = make_dict(chunk, pad_key=chunk_pad_key)
     else:
         chunk_dict = encode_dicts["chunk_dict"]
 
     e_text = encode(simple_text, word_dict)
     e_pos = encode(pos, pos_dict)
-    e_chunk = encode(chunk, chunk_dict)
+    e_chunk = encode(chunk, chunk_dict, pad_key=chunk_pad_key)
 
     data = {
         "text": e_text,
@@ -133,14 +139,14 @@ def path_to_data(path, encode_dicts={}):
     return data, encode_dicts
 
 
-def preprocessing():
+def preprocessing(chunk_pad_key="PAD"):
     dataset = "D:/download/conll2000"
 
     train = dataset + "/train.txt"
     test = dataset + "/test.txt"
 
-    train_data, encode_dicts = path_to_data(train)
-    test_data, _ = path_to_data(test, encode_dicts)
+    train_data, encode_dicts = path_to_data(train, chunk_pad_key=chunk_pad_key)
+    test_data, _ = path_to_data(test, encode_dicts, chunk_pad_key=chunk_pad_key)
 
     return train_data, test_data, encode_dicts
 
@@ -174,15 +180,6 @@ def subword_preprocessing(data, encode_dicts):
             previous_word_idx = word_idx
         labels.append(label_ids)
 
-    print(tokens["input_ids"][0])
-    print(labels[0])
-
-    print(tokens["input_ids"][1])
-    print(labels[1])
-
-    print(tokens["input_ids"][2])
-    print(labels[2])
-
     data = {
         "text": tokens["input_ids"],
         "attention_mask": tokens["attention_mask"],
@@ -197,12 +194,12 @@ def subword_preprocessing(data, encode_dicts):
 
 if __name__ == "__main__":
     train_data, test_data, encode_dicts = preprocessing()
-    # train_data, encode_dicts, tokenizer = subword_preprocessing(train_data, encode_dicts)
-    # test_data, _, _ = subword_preprocessing(test_data, encode_dicts)
+    train_data, encode_dicts, tokenizer = subword_preprocessing(train_data, encode_dicts)
+    test_data, _, _ = subword_preprocessing(test_data, encode_dicts)
 
     print(encode_dicts["chunk_dict"])
 
     text = decode(train_data["text"][0:1], encode_dicts["word_dict"])[0]
     print(text, len(text))
-    # for t in train_data["chunk"][:10]:
-    #    print(t)
+    for t in train_data["chunk"][:3]:
+        print(t)
