@@ -1,7 +1,8 @@
+import os
 import pytorch_lightning as pl
-from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
+from pytorch_lightning.callbacks import ModelCheckpoint
 from transformers import AutoModelForTokenClassification
-from torch.utils.data import Dataset, DataLoader
+from torch.utils.data import DataLoader
 from sklearn.metrics import accuracy_score
 
 import preprocessing
@@ -76,4 +77,6 @@ def main():
 
 
 if __name__ == "__main__":
+
+    os.environ["CUDA_VISIBLE_DEVICES"] = "1"
     main()
