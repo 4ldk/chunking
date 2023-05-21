@@ -62,8 +62,8 @@ def main():
     callbacks = []
     checkpoint = ModelCheckpoint(
         dirpath="./check_point",
-        filename="{epoch}-{recall:.2f}",
-        monitor="acc",
+        filename="{epoch}-{f1:.2f}",
+        monitor="f1",
         save_last=True,
         save_weights_only=True,
         save_top_k=1,
