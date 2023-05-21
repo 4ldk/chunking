@@ -16,3 +16,4 @@ trained models: https://drive.google.com/drive/folders/11uyVskbp9oLQVsj7A5lfIsKh
 
 current score  
 LSTM-crf: 92.6, 
+BERT-crf: 96.11: current output.txt,

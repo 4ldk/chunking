@@ -13,6 +13,7 @@ import lstm
 batch_size = 25
 lr = 1e-4
 num_epoch = 50
+warmup_t = 5
 
 
 def compute_metrics(pred):
@@ -56,7 +57,7 @@ def main():
     model = AutoModelForTokenClassification.from_pretrained("bert-base-uncased", num_labels=len(chunk_dict))  # "dslim/bert-base-NER"
     model = lstm.dnn_crf(model, batch_size, len(chunk_dict))
 
-    net = Net(model, lr, crf=True)
+    net = Net(model, lr, epoch=num_epoch, warmup_t=warmup_t, crf=True)
 
     callbacks = []
     checkpoint = ModelCheckpoint(

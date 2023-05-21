@@ -44,7 +44,7 @@ class bert_dataset(Dataset):
 
 
 class Net(pl.LightningModule):
-    def __init__(self, model, lr, crf=False, use_scheduler=True):
+    def __init__(self, model, lr, epoch=500, warmup_t=10, crf=False, use_scheduler=True):
         super().__init__()
 
         print("Making Model...")
@@ -63,9 +63,9 @@ class Net(pl.LightningModule):
         self.scheduler = {
             "scheduler": CosineScheduler(
                 self.optimizer,
-                t_initial=490,
+                t_initial=epoch - warmup_t,
                 lr_min=1e-9,
-                warmup_t=10,
+                warmup_t=warmup_t,
                 warmup_lr_init=1e-6,
                 warmup_prefix=True,
             ),
@@ -79,7 +79,6 @@ class Net(pl.LightningModule):
     def predict(self, x, sub):
         if self.crf:
             output = self.model.decode(x, sub)
-            output = torch.tensor(output)
         else:
             output = self.forward(x)
         return output
