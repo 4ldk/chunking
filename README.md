@@ -13,4 +13,4 @@ connlleval.py: https://github.com/sighsmile/conlleval/blob/master/conlleval.py
 trained models: https://drive.google.com/drive/folders/11uyVskbp9oLQVsj7A5lfIsKhhPJOoFKr?usp=sharing
 
 current score  
-LSTM-crf: 76.58, 
+LSTM-crf: 92.6, 
