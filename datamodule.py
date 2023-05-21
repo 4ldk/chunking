@@ -9,16 +9,38 @@ from utils import recall_score, f1_score
 
 
 class Dataset(Dataset):
-    def __init__(self, X, y) -> None:
+    def __init__(self, X, P, y) -> None:
         super().__init__()
         self.X = torch.tensor(X)
+        self.P = torch.tensor(P)
         self.y = torch.tensor(y)
 
     def __len__(self):
         return len(self.X)
 
     def __getitem__(self, idx):
-        return self.X[idx], self.y[idx]
+        return self.X[idx], self.P[idx], self.y[idx]
+
+
+class bert_dataset(Dataset):
+    def __init__(self, X, mask, y) -> None:
+        super().__init__()
+        if type(X) != torch.Tensor:
+            X = torch.tensor(X)
+        if type(mask) != torch.Tensor:
+            mask = torch.tensor(mask)
+        if type(y) != torch.Tensor:
+            y = torch.tensor(y)
+
+        self.X = X
+        self.mask = mask
+        self.y = y
+
+    def __len__(self):
+        return len(self.X)
+
+    def __getitem__(self, idx):
+        return self.X[idx], self.mask[idx], self.y[idx]
 
 
 class Net(pl.LightningModule):
@@ -37,13 +59,13 @@ class Net(pl.LightningModule):
         )
         self.crf = crf
 
-    def forward(self, x):
-        output = self.model(x)
+    def forward(self, x, sub):
+        output = self.model(x, sub)
         return output
 
-    def predict(self, x):
+    def predict(self, x, sub):
         if self.crf:
-            output = self.model.decode(x)
+            output = self.model.decode(x, sub)
             output = torch.tensor(output)
         else:
             output = self.forward(x)
@@ -59,13 +81,13 @@ class Net(pl.LightningModule):
 
     def training_step(self, batch, batch_idx):
 
-        input, label = batch
+        input, sub_input, label = batch
 
         if self.crf:
-            loss = self.model.forward(input, label)
+            loss = self.model.forward(input, sub_input, label)
             loss = torch.sum(-loss)
         else:
-            pred = self.forward(input)
+            pred = self.forward(input, sub_input)
             loss = self.loss_fn(pred, label)
         self.log("loss", loss)
 
@@ -73,10 +95,10 @@ class Net(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
 
-        input, label = batch
+        input, sub_input, label = batch
         batch_size = input.shape[0]
         label = label.to("cpu")
-        pred = self.predict(input).to("cpu")
+        pred = self.predict(input, sub_input).to("cpu")
         pred = pred.squeeze(-1)
         acc = (pred == label).sum().item() / batch_size
         pred = pred.view(-1)
@@ -97,10 +119,10 @@ class Net(pl.LightningModule):
 
     def test_step(self, batch, batch_idx):
 
-        input, label = batch
+        input, sub_input, label = batch
         batch_size = input.shape[0]
         label = label.to("cpu")
-        pred = self.predict(input).to("cpu")
+        pred = self.predict(input, sub_input).to("cpu")
 
         pred = pred.squeeze(-1)
         acc = (pred == label).sum().item() / batch_size

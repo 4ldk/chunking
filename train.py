@@ -20,11 +20,14 @@ def main():
     train_data, test_data, encode_dicts = preprocessing.preprocessing()
 
     word_dict = encode_dicts["word_dict"]
+    pos_dict = encode_dicts["pos_dict"]
     chunk_dict = encode_dicts["chunk_dict"]
 
-    model = lstm.lstm(batch_size, len(word_dict), chunk_dict, EMBEDDING_DIM, HIDDEN_DIM, num_layers=num_layers)
-    model = lstm.dnn_crf(model, batch_size, len(chunk_dict))
-    train_set = Dataset(train_data["text"], train_data["chunk"])
+    device = "cuda"
+    model = lstm.lstm(batch_size, len(word_dict), len(pos_dict), chunk_dict, EMBEDDING_DIM, HIDDEN_DIM, num_layers=num_layers, device=device)
+    model = lstm.dnn_crf(model, batch_size, len(chunk_dict), device=device)
+
+    train_set = Dataset(train_data["text"], train_data["pos"], train_data["chunk"])
     train_loader = DataLoader(
         train_set,
         batch_size=batch_size,
@@ -34,7 +37,7 @@ def main():
         drop_last=True,
     )
 
-    test_set = Dataset(test_data["text"], test_data["chunk"])
+    test_set = Dataset(test_data["text"], test_data["pos"], test_data["chunk"])
     test_loader = DataLoader(
         test_set,
         batch_size=batch_size,
@@ -45,8 +48,8 @@ def main():
     )
 
     print("input shape is")
-    for x, y in train_loader:
-        print(x.shape, y.shape)
+    for x, p, y in train_loader:
+        print(x.shape, p.shape, y.shape)
         break
 
     net = Net(model, lr, crf=True)

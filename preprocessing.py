@@ -1,12 +1,14 @@
 import re
 from itertools import chain
+from collections import Counter
 
 from tqdm import tqdm
 from transformers import AutoTokenizer
 
 
 def key_to_val(key, dic):
-    return dic[key] if key in dic else len(dic)
+
+    return dic[key] if key in dic else dic["UNK"]
 
 
 def val_to_key(val, dic, pad_key="PAD"):
@@ -18,12 +20,16 @@ def val_to_key(val, dic, pad_key="PAD"):
     return "UNK"
 
 
-def encode(data, encode_dict, pad_key="PAD"):
+def encode(data, encode_dict, pad_key="PAD", bos_key="BOS", eos_key="EOS"):
     out = []
     for d in data:
-        val_list = [key_to_val(key, encode_dict) for key in d]
-        while len(val_list) < 80:
+        val_list = [encode_dict[bos_key]]
+        val_list += [key_to_val(key, encode_dict) for key in d]
+
+        while len(val_list) < 80 - 1:
             val_list.append(key_to_val(pad_key, encode_dict))
+
+        val_list += [encode_dict[eos_key]]
 
         out.append(val_list)
     return out
@@ -37,22 +43,34 @@ def decode(data, encode_dict):
     return out
 
 
-def make_dict(data):
-    keys = list(set(chain.from_iterable(data)))
-    keys.sort()
+def make_dict(data, min_num=0, pad_key="PAD", bos_key="BOS", eos_key="EOS"):
+    keys = Counter(list(chain.from_iterable(data)))
+    keys = (k for (k, v) in keys.items() if v > min_num)
     d = {k: i for i, k in enumerate(keys)}
+
+    d["UNK"] = len(d)
+    d[pad_key] = len(d)
+    d[bos_key] = len(d)
+    d[eos_key] = len(d)
 
     return d
 
 
-def simplify_chunk(chunk):
-    out = []
-    for c in chunk:
-        simple_chunk = ["i" if val[0] == "i" else val for val in c]
-        simple_chunk = ["b" if val[0] == "b" else val for val in c]
-        out.append(simple_chunk)
+def num_masking(t):
+    num_count = sum([int(chr.isdigit()) for chr in t])
+    if num_count / len(t) > 0.75:
+        return "NUM"
+    else:
+        return t
 
-    return out
+
+def simplify_text(text):
+    simple_text = []
+    for word in text:
+        simple_word = [num_masking(w.lower()) for w in word]
+        simple_text.append(simple_word)
+
+    return simple_text
 
 
 def path_to_data(path, encode_dicts={}):
@@ -77,28 +95,26 @@ def path_to_data(path, encode_dicts={}):
         chunk.append([d[2] for d in divided])
         # chunk = simplify_chunk(chunk)
 
+    simple_text = simplify_text(text)
+
     if "word_dict" not in encode_dicts.keys():
-        word_dict = make_dict(text)
-        word_dict["PAD"] = len(word_dict)
+        word_dict = make_dict(simple_text, min_num=2)
     else:
         word_dict = encode_dicts["word_dict"]
 
     if "pos_dict" not in encode_dicts.keys():
         pos_dict = make_dict(pos)
-        pos_dict["PAD"] = len(pos_dict)
     else:
         pos_dict = encode_dicts["pos_dict"]
 
     if "chunk_dict" not in encode_dicts.keys():
         chunk_dict = make_dict(chunk)
-        pos_dict["PAD"] = len(pos_dict)
     else:
         chunk_dict = encode_dicts["chunk_dict"]
-        pos_dict["x"] = len(pos_dict)
 
-    e_text = encode(text, word_dict)
+    e_text = encode(simple_text, word_dict)
     e_pos = encode(pos, pos_dict)
-    e_chunk = encode(chunk, chunk_dict, pad_key="x")
+    e_chunk = encode(chunk, chunk_dict)
 
     data = {
         "text": e_text,
@@ -181,9 +197,12 @@ def subword_preprocessing(data, encode_dicts):
 
 if __name__ == "__main__":
     train_data, test_data, encode_dicts = preprocessing()
-    train_data, encode_dicts, tokenizer = subword_preprocessing(train_data, encode_dicts)
-    test_data, _, _ = subword_preprocessing(test_data, encode_dicts)
+    # train_data, encode_dicts, tokenizer = subword_preprocessing(train_data, encode_dicts)
+    # test_data, _, _ = subword_preprocessing(test_data, encode_dicts)
 
     print(encode_dicts["chunk_dict"])
-    for t in train_data["chunk"][:10]:
-        print(t)
+
+    text = decode(train_data["text"][0:1], encode_dicts["word_dict"])[0]
+    print(text, len(text))
+    # for t in train_data["chunk"][:10]:
+    #    print(t)

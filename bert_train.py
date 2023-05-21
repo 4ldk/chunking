@@ -1,20 +1,17 @@
-from transformers import AutoModelForTokenClassification, TrainingArguments, Trainer
-from torch.utils.data import Dataset
-import numpy as np
-
-import preprocessing
+import pytorch_lightning as pl
+from pytorch_lightning.callbacks import EarlyStopping, ModelCheckpoint
+from transformers import AutoModelForTokenClassification
+from torch.utils.data import Dataset, DataLoader
 from sklearn.metrics import accuracy_score
 
+import preprocessing
+from datamodule import Net, bert_dataset
+import lstm
 
-class dataset(Dataset):
-    def __init__(self, input, mask, label):
-        self.features = [{"input": i, "mask": m, "label": lbl} for i, m, lbl in zip(input, mask, label)]
 
-    def __len__(self):
-        return len(self.features)
-
-    def __getitem__(self, idx):
-        return self.features[idx]
+batch_size = 50
+lr = 1e-4
+num_epoch = 50
 
 
 def compute_metrics(pred):
@@ -33,26 +30,49 @@ def main():
 
     train_ids, train_mask = train_data["text"], train_data["attention_mask"]
     train_labels = train_data["chunk"]
-    train_dataset = dataset(train_ids, train_mask, train_labels)
+    train_set = bert_dataset(train_ids, train_mask, train_labels)
+    train_loader = DataLoader(
+        train_set,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=2,
+        pin_memory=True,
+        drop_last=True,
+    )
 
     test_ids, test_mask = test_data["text"], test_data["attention_mask"]
     test_labels = test_data["chunk"]
-    test_dataset = dataset(test_ids, test_mask, test_labels)
-
-    training_args = TrainingArguments(output_dir="test_trainer")
-    model = AutoModelForTokenClassification("bert-base-cased", num_labels=len(chunk_dict))  # "dslim/bert-base-NER"
-
-    training_args = TrainingArguments(output_dir="test_trainer", evaluation_strategy="epoch")
-
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=train_dataset,
-        eval_dataset=test_dataset,
-        compute_metrics=compute_metrics,
+    test_set = bert_dataset(test_ids, test_mask, test_labels)
+    test_loader = DataLoader(
+        test_set,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=2,
+        pin_memory=True,
+        drop_last=True,
     )
 
-    trainer.train()
+    model = AutoModelForTokenClassification("bert-base-cased", num_labels=len(chunk_dict))  # "dslim/bert-base-NER"
+    model = lstm.dnn_crf(model, batch_size, len(chunk_dict))
+
+    net = Net(model, lr, crf=True)
+
+    callbacks = []
+    checkpoint = ModelCheckpoint(
+        dirpath="./check_point",
+        filename="{epoch}-{recall:.2f}",
+        monitor="acc",
+        save_last=True,
+        save_weights_only=True,
+        save_top_k=1,
+        mode="max",
+    )
+    callbacks.append(checkpoint)
+
+    trainer = pl.Trainer(max_epochs=num_epoch, gpus=1, accelerator="gpu", check_val_every_n_epoch=10, callbacks=callbacks)
+
+    trainer.fit(net, train_loader, test_loader)
+    trainer.test(dataloaders=test_loader, ckpt_path="best")
 
 
 if __name__ == "__main__":
