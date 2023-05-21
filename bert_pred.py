@@ -12,7 +12,7 @@ num_layers = 3
 num_epoch = 500
 batch_size = 1
 lr = 0.0001
-path = "./check_point/last-v2.ckpt"
+path = "./check_point/epoch=39-recall=0.92.ckpt"
 
 
 def main():

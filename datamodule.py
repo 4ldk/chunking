@@ -115,16 +115,16 @@ class Net(pl.LightningModule):
         acc = (pred == label).sum().item() / batch_size
         pred = pred.view(-1)
         label = label.view(-1)
-        recall = recall_score(label, pred, average="macro").tolist()
+        f1 = f1_score(label, pred, average="macro").tolist()
 
-        return {"acc": acc, "recall": recall}
+        return {"acc": acc, "f1": f1}
 
     def validation_epoch_end(self, outputs):
         ave_acc = torch.tensor([x["acc"] for x in outputs]).to(torch.float).mean()
-        ave_recall = torch.tensor([x["recall"] for x in outputs]).to(torch.float).mean()
+        ave_f1 = torch.tensor([x["f1"] for x in outputs]).to(torch.float).mean()
 
         self.log("acc", ave_acc)
-        self.log("recall", ave_recall)
+        self.log("f1", ave_f1)
         self.log("lr", self.optimizer.param_groups[0]["lr"])
 
         return {"acc": ave_acc}
