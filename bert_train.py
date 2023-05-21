@@ -71,7 +71,7 @@ def main():
     )
     callbacks.append(checkpoint)
 
-    trainer = pl.Trainer(max_epochs=num_epoch, gpus=1, accelerator="gpu", check_val_every_n_epoch=10, callbacks=callbacks)
+    trainer = pl.Trainer(max_epochs=num_epoch, gpus=1, accelerator="gpu", check_val_every_n_epoch=5, callbacks=callbacks)
 
     trainer.fit(net, train_loader, test_loader)
     trainer.test(dataloaders=test_loader, ckpt_path="best")

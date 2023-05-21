@@ -115,7 +115,7 @@ class Net(pl.LightningModule):
         acc = (pred == label).sum().item() / batch_size
         pred = pred.view(-1)
         label = label.view(-1)
-        f1 = f1_score(label, pred, average="macro").tolist()
+        f1 = f1_score(label, pred).tolist()
 
         return {"acc": acc, "f1": f1}
 
