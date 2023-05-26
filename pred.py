@@ -5,13 +5,13 @@ import preprocessing
 from datamodule import Dataset, Net
 
 
-EMBEDDING_DIM = 256
+EMBEDDING_DIM = 300  # random embed: 256, w2v embed 300
 HIDDEN_DIM = 256
 num_layers = 3
 num_epoch = 500
 batch_size = 1
 lr = 0.0001
-path = "./check_point/epoch=59-recall=0.85.ckpt"
+path = "./check_point/last.ckpt"
 
 
 def main():
