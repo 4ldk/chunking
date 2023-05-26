@@ -15,5 +15,6 @@ connlleval.py: https://github.com/sighsmile/conlleval/blob/master/conlleval.py
 trained models: https://drive.google.com/drive/folders/11uyVskbp9oLQVsj7A5lfIsKhhPJOoFKr?usp=sharing
 
     current score  
-    LSTM-crf: 92.6, 
+    LSTM-crf: 92.6,  
+    LSTM-w2v-crf: 92.49,  
     BERT-crf: 96.38: current output.txt,
