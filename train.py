@@ -14,6 +14,7 @@ num_layers = 3
 num_epoch = 500
 batch_size = 50
 lr = 0.0001
+use_w2v = True
 
 
 def main():
@@ -24,7 +25,14 @@ def main():
     chunk_dict = encode_dicts["chunk_dict"]
 
     device = "cuda"
-    model = lstm.lstm(batch_size, len(word_dict), len(pos_dict), chunk_dict, EMBEDDING_DIM, HIDDEN_DIM, num_layers=num_layers, device=device)
+    if use_w2v:
+        import w2v
+
+        model = w2v.w2v_init_model(encode_dicts, batch_size, HIDDEN_DIM, num_layers, device=device)
+
+    else:
+        model = lstm.lstm(batch_size, len(word_dict), len(pos_dict), chunk_dict, EMBEDDING_DIM, HIDDEN_DIM, num_layers=num_layers, device=device)
+
     model = lstm.dnn_crf(model, batch_size, len(chunk_dict), device=device)
 
     train_set = lstm_dataset(train_data["text"], train_data["pos"], train_data["chunk"])
