@@ -49,7 +49,7 @@ def main():
     test_loader = DataLoader(
         test_set,
         batch_size=batch_size,
-        shuffle=True,
+        shuffle=False,
         num_workers=2,
         pin_memory=True,
         drop_last=True,
